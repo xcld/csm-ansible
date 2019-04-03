@@ -1,0 +1,138 @@
+---
+- hosts: csMsite02
+  pre_tasks:
+      - name: update apt cache if needed.
+        become: yes
+        become_method: sudo
+        apt: update_cache=yes cache_valid_time=3600
+  tasks:
+      - name: 安装用于管理apt源工具
+        become: yes
+        become_method: sudo
+        apt: name={{item}} state=present
+        with_items:
+            - python-apt
+            - python-pycurl
+      - name: 添加php的ondrej源
+        become: yes
+        become_method: sudo
+        apt_repository: repo='ppa:ondrej/php' update_cache=yes
+      - name: 安装 nginx,memcached,php 以及拓展依赖
+        become: yes
+        become_method: sudo
+        apt: name={{ item }} state=present
+        with_items:
+             -  git
+             -  curl
+             -  nginx
+             -  memcached
+             -  php7.2
+             -  dh-php
+             -  php-common
+             -  php-pear
+             -  php-memcache
+             -  php-memcached
+             -  pkg-php-tools
+             -  php7.2-cli
+             -  php7.2-common
+             -  php7.2-curl
+             -  php7.2-fpm
+             -  php7.2-gd
+             -  php7.2-json
+             -  php7.2-mbstring
+             -  php7.2-mysql
+             -  php7.2-opcache
+             -  php7.2-pspell
+             -  php7.2-readline
+             -  php7.2-recode
+             -  php7.2-snmp
+             -  php7.2-tidy
+             -  php7.2-xml
+             -  php7.2-xmlrpc
+             -  php7.2-xsl
+             -  php7.2-zip
+             -  openssl
+             -  libcurl4-openssl-dev
+             -  postfix
+      - name: "stop ufw"
+        become: yes
+        become_method: sudo
+        service: name=ufw state=stopped
+      - name: backup oldnginxconfig
+        become: yes
+        become_method: sudo
+        shell: >
+           mv /etc/nginx /etc/nginx.bak
+      - name: backup oldphpconfig
+        become: yes
+        become_method: sudo
+        shell: >
+           mv  /etc/php/7.2/fpm /etc/php/7.2/fpm.bak
+      - name: backup oldmemcacheconfig
+        become: yes
+        become_method: sudo
+        shell: >
+           mv /etc/memcached.conf /etc/memcached.conf.bak
+      - name: backup oldpostfix
+        become: yes
+        become_method: sudo
+        shell: >
+           mv /etc/postfix /etc/postfix.bak
+      - name: Extract nginxconfig into dir
+        become: yes
+        become_method: sudo
+        unarchive:
+           src: "https://m.crazysales.com.au/csrm/nginx.tar.gz"
+           dest: "/etc/"
+           remote_src: yes
+      - name: Extract phpconfig into dir
+        become: yes
+        become_method: sudo
+        unarchive:
+           src: "https://m.crazysales.com.au/csrm/fpm72.tar.gz"
+           dest: "/etc/php/7.2/"
+           remote_src: yes
+      - name: Extract sslconfig into dir
+        become: yes
+        become_method: sudo
+        unarchive:
+           src: "https://m.crazysales.com.au/csrm/sslmobile.tar"
+           dest: "/etc/ssl"
+           remote_src: yes
+      - name: Extract appsrc into dir
+        become: yes
+        become_method: sudo
+        unarchive:
+           src: "https://m.crazysales.com.au/csrm/htmlroot.tar.gz"
+           dest: "/home"
+           group: crazysal
+           owner: crazysal
+           remote_src: yes
+      - name: Extract postfixconfig into dir
+        become: yes
+        become_method: sudo
+        unarchive:
+           src: "https://m.crazysales.com.au/csrm/postfix.tar.gz"
+           dest: "/etc/"
+           remote_src: yes
+      - name: configure postfix CAfile
+        become: yes
+        become_method: sudo
+        shell: >
+           postconf -e 'smtp_tls_CAfile = /etc/ssl/certs/ca-certificates.crt'
+      - name: get memchachconfig into dir
+        become: yes
+        become_method: sudo
+        get_url:
+           url: "https://m.crazysales.com.au/csrm/memcached.conf"
+           dest: "/etc/"
+           mode: 0644
+      - name: start memcache,nginx,php
+        become: yes
+        become_method: sudo
+        service: "name={{ item }} state=started enabled=yes"
+        with_items:
+             - nginx
+             - php7.2-fpm
+             - memcached
+             - postfix
