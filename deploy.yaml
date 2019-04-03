@@ -128,13 +128,13 @@
            dest: "/etc/"
            mode: 0644
       - name: get corntabfile into dir
-          become: yes
-          become_method: sudo
-          get_url:
-            url: "https://m.crazysales.com.au/csrm/cron.tar.gz"
-            dest: "/var/spool/cron/crontabs/"
-            mode: 0600
-            remote_src: yes
+        become: yes
+        become_method: sudo
+        get_url:
+           url: "https://m.crazysales.com.au/csrm/cron.tar.gz"
+           dest: "/var/spool/cron/crontabs/"
+           mode: 0600
+           remote_src: yes
       - name: start memcache,nginx,php
         become: yes
         become_method: sudo
